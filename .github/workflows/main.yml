@@ -1,0 +1,35 @@
+name: Build and release
+
+on:
+  push:
+    branches:
+      - main
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyserial
+          pip install nuitka imageio
+      - name: Get Short SHA
+        run: echo "SHORT_SHA=$("${{ github.sha }}".SubString(0, 8))" >> $env:GITHUB_ENV
+      - name: Build application
+        run: nuitka --assume-yes-for-downloads --standalone --disable-console --enable-plugin=tk-inter serialGenie.py
+      - name: Compress Application
+        run: Compress-Archive ./serialGenie.dist serialGenie-${{ env.SHORT_SHA }}.zip
+      - name: Upload files to a GitHub release
+        uses: svenstaro/upload-release-action@2.3.0
+        with:
+          repo_token: ${{ github.token }}
+          file: serialGenie-${{ env.SHORT_SHA }}.zip
+          tag: ${{ env.SHORT_SHA }}
+          release_name: Release ${{ env.SHORT_SHA }}
+          
+         
