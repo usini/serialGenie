@@ -9,6 +9,7 @@ from datetime import datetime
 import re
 #import pyautogui
 import sys
+import os
 
 ANSI_COLOR = {}
 ANSI_COLOR["0;30"] = "black"
@@ -26,8 +27,7 @@ dis_on_focus_out = False
 first_device = None
 last_data = ""
 same_data_counter = 0
-
-
+disable_auto_pause = False
 
 """
 windows = pyautogui.getAllWindows()
@@ -59,7 +59,6 @@ board_information = {}
 def detect_color(data):
     color_code = None
     if "\x1b" in data:
-        print("Colored text")
         color_code = re.search(r'\x1b\[(.*?)m', data)
         if color_code:
             data = data.replace(color_code.group(0), "")
@@ -130,7 +129,7 @@ def receive_data():
 
 def on_focus_out(event):
     global dis_on_focus_out, connected, first_device
-    if dis_on_focus_out == False and event.widget.master == None:
+    if dis_on_focus_out == False and event.widget.master == None and disable_auto_pause == False:
         print("Focus Out disconnected")
         ser.close()
         root.title(first_device + " (Pause)")
@@ -141,7 +140,7 @@ def on_focus_out(event):
 
 def on_focus_in(event):
     global dis_on_focus_out
-    if dis_on_focus_out == True:
+    if dis_on_focus_out == True and disable_auto_pause == False:
         print("Focus in reconnect")
         dis_on_focus_out = False
 
@@ -150,6 +149,12 @@ def on_disconnect(ser):
     print("Serial disconnected")
     connected = False
     root.title("Disconnected")
+
+def on_closing():
+    print("On closing")
+    ser.close()
+    root.destroy()
+    os._exit(0)  
 
 def reset():
     global ser
@@ -234,5 +239,6 @@ root.bind("<FocusIn>", on_focus_in)
 root.attributes("-topmost", True)
 root.attributes("-alpha", 0.95)
 # sv_ttk.use_dark_theme()
+root.protocol("WM_DELETE_WINDOW", on_closing)
 root.mainloop()
 
