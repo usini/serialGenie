@@ -39,12 +39,12 @@ class SerialManager:
 
                 if self.last_data == data:
                     self.last_data = data
-                    same_data_counter = same_data_counter + 1
+                    self.same_data_counter = self.same_data_counter + 1
                     self.gui.monitor.delete("end-2l","end-1l")
                     data = data.rstrip()
                 else:
                     self.last_data = data
-                    same_data_counter = 0
+                    self.same_data_counter = 0
 
                 if self.connected:
                     toprint = self.detect_esp32_boot(data)
@@ -56,10 +56,10 @@ class SerialManager:
                         else:
                             self.gui.monitor.insert("end", data)
                         
-                        if same_data_counter != 0:
+                        if self.same_data_counter != 0:
                             self.gui.monitor.tag_config("red", background="red", foreground="white")
                             self.gui.monitor.insert("end"," ")
-                            self.gui.monitor.insert("end", "(" + str(same_data_counter) + ")", "red")
+                            self.gui.monitor.insert("end", "(" + str(self.same_data_counter) + ")", "red")
                             self.gui.monitor.insert("end","\n")
                         self.gui.monitor.see('end')
 
