@@ -7,7 +7,7 @@ import threading
 #import sv_ttk
 from datetime import datetime
 import re
-import pyautogui
+#import pyautogui
 import sys
 
 ANSI_COLOR = {}
@@ -24,6 +24,10 @@ ser = None
 connected = False
 dis_on_focus_out = False
 first_device = None
+last_data = ""
+same_data_counter = 0
+
+
 
 """
 windows = pyautogui.getAllWindows()
@@ -89,14 +93,23 @@ def detect_esp32_boot(data):
     return True
 
 def receive_data():
-    global ser, connected, dis_on_focus_out
+    global ser, connected, dis_on_focus_out, last_data
     while True:
         if connected and dis_on_focus_out == False:
             try:
-                data = ser.readline().decode("utf-8")
+                data = ser.readline().decode("utf-8")              
             except:
                 print("Read failed disconnect")
                 connected = False
+
+            if last_data == data:
+                last_data = data
+                same_data_counter = same_data_counter + 1
+                text_widget.delete("end-2l","end-1l")
+                data = data.rstrip()
+            else:
+                last_data = data
+                same_data_counter = 0
 
             if connected:
                 toprint = detect_esp32_boot(data)
@@ -104,9 +117,15 @@ def receive_data():
                 if toprint:
                     if color_code is not None:
                         text_widget.tag_config(color_code, foreground=color_code)
-                        text_widget.insert('end', data, color_code)    
+                        text_widget.insert("end", data, color_code)
                     else:
-                        text_widget.insert('end', data)
+                        text_widget.insert("end", data)
+                    
+                    if same_data_counter != 0:
+                        text_widget.tag_config("red", background="red", foreground="white")
+                        text_widget.insert("end"," ")
+                        text_widget.insert("end", "(" + str(same_data_counter) + ")", "red")
+                        text_widget.insert("end","\n")
                     text_widget.see('end')
 
 def on_focus_out(event):
@@ -209,7 +228,6 @@ receive_thread.start()
 
 connection_thread = threading.Thread(target=connection_manager)
 connection_thread.start()
-
 
 root.bind("<FocusOut>", on_focus_out)
 root.bind("<FocusIn>", on_focus_in)
